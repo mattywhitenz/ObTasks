@@ -3,10 +3,13 @@ import { MarkdownRenderChild } from 'obsidian';
 import { GlobalFilter } from '../Config/GlobalFilter';
 import { TaskLayoutOptions } from '../Layout/TaskLayoutOptions';
 import { QueryLayoutOptions } from '../Layout/QueryLayoutOptions';
+import { DateFallback } from '../DateTime/DateFallback';
+import { replaceTaskWithTasks } from '../Obsidian/File';
 import { TasksFile } from '../Scripting/TasksFile';
 import { Task } from '../Task/Task';
 import { TaskLineRenderer, createAndAppendElement } from '../Renderer/TaskLineRenderer';
 import { TaskLocation } from '../Task/TaskLocation';
+import { TaskModal } from '../Obsidian/TaskModal';
 
 /**
  * An inline renderer for processing and rendering tasks in the Reading View of an Obsidian file.
@@ -24,9 +27,11 @@ import { TaskLocation } from '../Task/TaskLocation';
  */
 export class InlineRenderer {
     private readonly app: App;
+    private readonly plugin: Plugin;
 
     constructor({ plugin, app }: { plugin: Plugin; app: App }) {
         this.app = app;
+        this.plugin = plugin;
 
         plugin.registerMarkdownPostProcessor((el, ctx) => {
             plugin.app.workspace.onLayoutReady(() => {
@@ -145,6 +150,11 @@ export class InlineRenderer {
                 isTaskInQueryFile: true,
             });
 
+            // Add edit pencil to the metadata line (or directly to the li)
+            const metadataLine = taskElement.querySelector('.tasks-metadata-line');
+            const editContainer = metadataLine ?? taskElement;
+            this.addEditButton(editContainer, task);
+
             // If the rendered element contains a sub-list or sub-div (e.g. the
             // folding arrow), we need to keep it.
             const renderedChildren = renderedElement.childNodes;
@@ -171,5 +181,35 @@ export class InlineRenderer {
 
             renderedElement.replaceWith(taskElement);
         }
+    }
+
+    private addEditButton(container: HTMLElement, task: Task) {
+        const editTaskPencil = createAndAppendElement('a', container);
+        editTaskPencil.classList.add('tasks-edit');
+        editTaskPencil.title = 'Edit task';
+        editTaskPencil.href = '#';
+
+        editTaskPencil.addEventListener('click', (event: MouseEvent) => {
+            event.preventDefault();
+
+            const onSubmit = async (updatedTasks: Task[]): Promise<void> => {
+                await replaceTaskWithTasks({
+                    originalTask: task,
+                    newTasks: DateFallback.removeInferredStatusIfNeeded(task, updatedTasks),
+                });
+            };
+
+            const taskModal = new TaskModal({
+                app: this.app,
+                task,
+                onSaveSettings: async () => {
+                    // @ts-expect-error accessing plugin method
+                    await this.plugin.saveSettings();
+                },
+                onSubmit,
+                allTasks: [],
+            });
+            taskModal.open();
+        });
     }
 }
