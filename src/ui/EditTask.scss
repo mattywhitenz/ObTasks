@@ -131,6 +131,46 @@
     }
 }
 
+.tasks-modal-metadata {
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-s);
+    padding: 8px 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--interactive-accent);
+
+    label {
+        font-size: var(--font-ui-smaller);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    section + section {
+        margin-top: 6px;
+    }
+}
+
+.tasks-modal-more-options {
+    margin-top: 6px;
+
+    summary {
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: var(--font-ui-small);
+        padding: 4px 0;
+        user-select: none;
+
+        &:hover {
+            color: var(--text-normal);
+        }
+    }
+
+    &[open] summary {
+        margin-bottom: 6px;
+    }
+}
+
 .tasks-modal-button-section {
     position: sticky;
     bottom: 0;
