@@ -1,0 +1,17 @@
+
+```mermaid
+flowchart LR
+
+classDef TODO        stroke:#f33,stroke-width:3px;
+classDef DONE        stroke:#0c0,stroke-width:3px;
+classDef IN_PROGRESS stroke:#fa0,stroke-width:3px;
+classDef CANCELLED   stroke:#ddd,stroke-width:3px;
+classDef NON_TASK    stroke:#99e,stroke-width:3px;
+classDef ON_HOLD     stroke:#00f,stroke-width:3px;
+
+1["In Progress"]:::IN_PROGRESS
+2["Cancelled"]:::CANCELLED
+
+
+linkStyle default stroke:gray
+```
