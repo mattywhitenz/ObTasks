@@ -149,25 +149,29 @@ export class HtmlQueryResultsRenderer extends QueryResultsRendererBase {
         const footnotes = listItem.querySelectorAll('[data-footnote-id]');
         footnotes.forEach((footnote) => footnote.remove());
 
-        const extrasSpan = createAndAppendElement('span', listItem);
-        extrasSpan.classList.add('task-extras');
+        // Find the metadata line to append extras there; fall back to a new span on the li
+        const metadataLine = listItem.querySelector('.tasks-metadata-line');
+        const extrasContainer = metadataLine ?? createAndAppendElement('span', listItem);
+        if (!metadataLine) {
+            extrasContainer.classList.add('task-extras');
+        }
 
         if (!this.getters.query().queryLayoutOptions.hideUrgency) {
-            this.addUrgency(extrasSpan, task);
+            this.addUrgency(extrasContainer, task);
         }
 
         const shortMode = this.getters.query().queryLayoutOptions.shortMode;
 
         if (!this.getters.query().queryLayoutOptions.hideBacklinks) {
-            this.addBacklinks(extrasSpan, task, shortMode, isFilenameUnique);
+            this.addBacklinks(extrasContainer, task, shortMode, isFilenameUnique);
         }
 
         if (!this.getters.query().queryLayoutOptions.hideEditButton) {
-            this.addEditButton(extrasSpan, task);
+            this.addEditButton(extrasContainer, task);
         }
 
         if (!this.getters.query().queryLayoutOptions.hidePostponeButton && shouldShowPostponeButton(task)) {
-            this.addPostponeButton(extrasSpan, task, shortMode);
+            this.addPostponeButton(extrasContainer, task, shortMode);
         }
 
         this.currentULElement().appendChild(listItem);
