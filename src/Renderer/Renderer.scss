@@ -124,6 +124,15 @@ a.tasks-edit, a.tasks-postpone {
     position: relative;
 }
 
+.tasks-metadata-line {
+    display: block;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    margin-top: 1px;
+    padding-left: 0.25em;
+    opacity: 0.85;
+}
+
 .tasks-list-text .tooltip {
     position: absolute;
     top: 0px;

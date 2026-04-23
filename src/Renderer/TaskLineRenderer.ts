@@ -211,50 +211,43 @@ export class TaskLineRenderer {
     ): Promise<void> {
         const fieldRenderer = new TaskFieldRenderer();
         const emojiSerializer = TASK_FORMATS.tasksPluginEmoji.taskSerializer;
-        // Render and build classes for all the task's visible components
-        for (const component of this.taskLayoutOptions.shownComponents) {
-            const componentString = emojiSerializer.componentToString(
-                task,
-                this.queryLayoutOptions.shortMode,
+
+        // Separate description from metadata components
+        const descriptionComponents = this.taskLayoutOptions.shownComponents.filter(
+            (c) => c === TaskLayoutComponent.Description,
+        );
+        const metadataComponents = this.taskLayoutOptions.shownComponents.filter(
+            (c) => c !== TaskLayoutComponent.Description,
+        );
+
+        // Render description directly into parentElement
+        for (const component of descriptionComponents) {
+            await this.renderComponent(
+                fieldRenderer,
+                emojiSerializer,
                 component,
+                task,
+                parentElement,
+                li,
+                isTaskInQueryFile,
             );
-            if (componentString) {
-                // Create the text span that will hold the rendered component
-                const span = createAndAppendElement('span', parentElement);
+        }
 
-                // Inside that text span, we are creating another internal span, that will hold the text itself.
-                // This may seem redundant, and by default it indeed does nothing, but we do it to allow the CSS
-                // to differentiate between the container of the text and the text itself, so it will be possible
-                // to do things like surrounding only the text (rather than its whole placeholder) with a highlight
-                const internalSpan = createAndAppendElement('span', span);
-                await this.renderComponentText(internalSpan, componentString, component, task, isTaskInQueryFile);
-                this.addInternalClasses(component, internalSpan);
+        // Render metadata components into a separate container
+        if (metadataComponents.length > 0) {
+            const metadataLine = createAndAppendElement('div', parentElement);
+            metadataLine.classList.add('tasks-metadata-line');
 
-                // Add the component's CSS class describing what this component is (priority, due date etc.)
-                fieldRenderer.addClassName(span, component);
-
-                // Add the component's attribute ('priority-medium', 'due-past-1d' etc.)
-                fieldRenderer.addDataAttribute(span, task, component);
-                fieldRenderer.addDataAttribute(li, task, component);
-
-                if (Task.allDateFields().includes(component)) {
-                    const componentDateField = component as AllTaskDateFields;
-
-                    // Note: The more convenient span.onClickEvent() doesn't work here, as it is not available when tests are run.
-                    span.addEventListener('click', (ev: MouseEvent) => {
-                        ev.preventDefault(); // suppress the default click behavior
-                        ev.stopPropagation(); // suppress further event propagation
-                        promptForDate(span, task, componentDateField, defaultTaskSaver);
-                    });
-
-                    span.addEventListener('contextmenu', (ev: MouseEvent) => {
-                        showMenu(ev, new DateMenu(componentDateField, task, defaultTaskSaver));
-                    });
-                    span.setAttribute(
-                        'title',
-                        `Click to edit ${splitDateText(componentDateField)}, Right-click for more options`,
-                    );
-                }
+            for (const component of metadataComponents) {
+                await this.renderComponent(
+                    fieldRenderer,
+                    emojiSerializer,
+                    component,
+                    task,
+                    metadataLine,
+                    li,
+                    isTaskInQueryFile,
+                );
             }
         }
 
@@ -270,6 +263,47 @@ export class TaskLineRenderer {
         // priority field.
         if (li.dataset.taskPriority === undefined) {
             fieldRenderer.addDataAttribute(li, task, TaskLayoutComponent.Priority);
+        }
+    }
+
+    private async renderComponent(
+        fieldRenderer: TaskFieldRenderer,
+        emojiSerializer: { componentToString: (task: Task, shortMode: boolean, component: TaskLayoutComponent) => string },
+        component: TaskLayoutComponent,
+        task: Task,
+        container: HTMLElement,
+        li: HTMLLIElement,
+        isTaskInQueryFile: boolean,
+    ): Promise<void> {
+        const componentString = emojiSerializer.componentToString(
+            task,
+            this.queryLayoutOptions.shortMode,
+            component,
+        );
+        if (componentString) {
+            const span = createAndAppendElement('span', container);
+            const internalSpan = createAndAppendElement('span', span);
+            await this.renderComponentText(internalSpan, componentString, component, task, isTaskInQueryFile);
+            this.addInternalClasses(component, internalSpan);
+            fieldRenderer.addClassName(span, component);
+            fieldRenderer.addDataAttribute(span, task, component);
+            fieldRenderer.addDataAttribute(li, task, component);
+
+            if (Task.allDateFields().includes(component)) {
+                const componentDateField = component as AllTaskDateFields;
+                span.addEventListener('click', (ev: MouseEvent) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    promptForDate(span, task, componentDateField, defaultTaskSaver);
+                });
+                span.addEventListener('contextmenu', (ev: MouseEvent) => {
+                    showMenu(ev, new DateMenu(componentDateField, task, defaultTaskSaver));
+                });
+                span.setAttribute(
+                    'title',
+                    `Click to edit ${splitDateText(componentDateField)}, Right-click for more options`,
+                );
+            }
         }
     }
 
